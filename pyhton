@@ -1,0 +1,422 @@
+# --------------------------- SECURE AI CYBER BOT V2.2 ---------------------------
+import os
+import base64
+import logging
+import torch
+import requests
+import re
+import time
+import ast
+import hashlib
+import threading
+from datetime import datetime
+from functools import lru_cache
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    pipeline,
+    AutoModelForSeq2SeqLM
+)
+from telegram import Update
+from telegram.ext import (
+    Application,
+    ContextTypes,
+    MessageHandler,
+    filters,
+    ConversationHandler
+)
+
+# --------------------------- CORE SECURITY SYSTEMS ---------------------------
+TRUSTED_USERS = {"admin007", "elite_hacker", "trusted_dev"}
+SUPER_MODE_ENABLED = set()
+STEALTH_MODE_ENABLED = set()
+ACTIVITY_LOG = "security_audit.log"
+
+def is_trusted_user(user_id):
+    return str(user_id) in TRUSTED_USERS
+
+def enable_super_mode(user_id):
+    SUPER_MODE_ENABLED.add(user_id)
+    log_security_event(f"Super Mode Enabled by {user_id}")
+
+def disable_super_mode(user_id):
+    SUPER_MODE_ENABLED.discard(user_id)
+    log_security_event(f"Super Mode Disabled by {user_id}")
+
+def is_super_mode(user_id):
+    return user_id in SUPER_MODE_ENABLED
+
+def enable_stealth_mode(user_id):
+    STEALTH_MODE_ENABLED.add(user_id)
+    log_security_event(f"Stealth Enabled by {user_id}")
+
+def disable_stealth_mode(user_id):
+    STEALTH_MODE_ENABLED.discard(user_id)
+    log_security_event(f"Stealth Disabled by {user_id}")
+
+def is_stealth_mode(user_id):
+    return user_id in STEALTH_MODE_ENABLED
+
+def log_security_event(event):
+    with open(ACTIVITY_LOG, "a") as f:
+        f.write(f"{datetime.now()} - {event}\n")
+
+# --------------------------- SMART PROMPT HANDLER (INTENT DETECTION) ---------------------------
+class SmartPromptHandler:
+    def __init__(self, model_name="google/flan-t5-base", unload_after=60):
+        self.model_name = model_name
+        self.model = None
+        self.tokenizer = None
+        self.last_used = None
+        self.unload_after = unload_after
+        self._lock = threading.Lock()
+        self._watchdog_started = False
+        
+        # Intent classification template
+        self.intent_template = """Classify this security command:
+        Options: [generate, decrypt, enable_super_mode, disable_super_mode, enable_stealth_mode, disable_stealth_mode]
+        
+        Examples:
+        "create a password cracker" → generate
+        "decode this base64" → decrypt  
+        "turn on admin mode" → enable_super_mode
+        "go dark" → enable_stealth_mode
+        "make a scanner" → generate
+        "disable hidden mode" → disable_stealth_mode
+        
+        Input: "{query}" → """
+
+    def load_model(self):
+        with self._lock:
+            if not self.model:
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+                self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
+                self.last_used = time.time()
+                self._start_watchdog()
+
+    def unload_model(self):
+        with self._lock:
+            if self.model:
+                del self.model
+                del self.tokenizer
+                self.model = None
+                self.tokenizer = None
+                torch.cuda.empty_cache()
+
+    def _start_watchdog(self):
+        if not self._watchdog_started:
+            self._watchdog_started = True
+            threading.Thread(target=self._watchdog_loop, daemon=True).start()
+
+    def _watchdog_loop(self):
+        while True:
+            time.sleep(10)
+            with self._lock:
+                if self.model and time.time() - self.last_used > self.unload_after:
+                    self.unload_model()
+
+    def classify_intent(self, query: str) -> str:
+        self.load_model()
+        self.last_used = time.time()
+        
+        prompt = self.intent_template.format(query=query[:256])  # Truncate long inputs
+        inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+        outputs = self.model.generate(
+            **inputs,
+            max_length=32,
+            temperature=0.1,
+            num_beams=1,
+            do_sample=False
+        )
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+
+    def refine_prompt(self, prompt: str) -> str:
+        self.load_model()
+        self.last_used = time.time()
+        inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+        outputs = self.model.generate(**inputs, max_length=128)
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+# --------------------------- MODEL MANAGEMENT ---------------------------
+class ModelSwitcher:
+    def __init__(self):
+        self.current_model = None
+        self.current_tokenizer = None
+        self.models = {
+            'light': ("microsoft/phi-3-mini-4k-instruct", None),
+            'full': ("codellama/CodeLlama-7b-hf", 
+                    BitsAndBytesConfig(
+                        load_in_4bit=True,
+                        bnb_4bit_quant_type="nf4",
+                        bnb_4bit_compute_dtype=torch.float16
+                    ))
+        }
+        
+    def load_model(self, model_type):
+        if self.current_model: self.unload_model()
+        model_name, quant_config = self.models[model_type]
+        self.current_tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.current_model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            device_map="auto",
+            quantization_config=quant_config
+        )
+        return self.current_model, self.current_tokenizer
+    
+    def unload_model(self):
+        if self.current_model:
+            del self.model
+            del self.tokenizer
+            torch.cuda.empty_cache()
+
+# --------------------------- SECURITY COMPONENTS ---------------------------
+class EthicalGuard:
+    def __init__(self):
+        self.blocked_patterns = [
+            r"critical infrastructure",
+            r"healthcare systems",
+            r"financial infrastructure"
+        ]
+        
+    def check_request(self, user_id, prompt):
+        if is_trusted_user(user_id):
+            return "ALLOWED"
+        return self._ethical_check(prompt)
+        
+    def _ethical_check(self, prompt):
+        for pattern in self.blocked_patterns:
+            if re.search(pattern, prompt, re.IGNORECASE):
+                return f"BLOCKED: Contains restricted pattern '{pattern}'"
+        return "ALLOWED"
+
+class RLLearningEngine:
+    def __init__(self):
+        self.success_db = {}
+        
+    def update_model(self, exploit_code, success):
+        code_hash = hashlib.sha256(exploit_code.encode()).hexdigest()
+        self.success_db[code_hash] = {
+            'code': exploit_code,
+            'success': success,
+            'timestamp': datetime.now()
+        }
+
+    def get_optimal_strategy(self):
+        successful = [v for v in self.success_db.values() if v['success']]
+        return max(successful, key=lambda x: x['timestamp']) if successful else None
+
+class ThreatAnalyzer:
+    def __init__(self):
+        self.validator = pipeline("text-classification", model="microsoft/codebert-base")
+        self.similarity = pipeline("feature-extraction", model="microsoft/codebert-base")
+
+    def full_analysis(self, code):
+        return {
+            "vulnerabilities": self._detect_vulns(code),
+            "stealth_score": self._calc_stealth(code),
+            "originality": self._check_originality(code)
+        }
+
+    def _detect_vulns(self, code):
+        result = self.validator(code[:1024])
+        return [label for label in result['labels'] if label in ['SQLi', 'XSS', 'RCE']]
+
+    def _calc_stealth(self, code):
+        stealth_keywords = ['obfuscate', 'encrypt', 'random']
+        return sum(1 for kw in stealth_keywords if kw in code.lower()) / len(stealth_keywords)
+
+    def _check_originality(self, code):
+        embeddings = self.similarity(code[:512])
+        return torch.mean(torch.tensor(embeddings)).item()
+
+# --------------------------- GENERATION CORE ---------------------------
+class SmartGenerator:
+    def __init__(self):
+        self.switcher = ModelSwitcher()
+        self.osint = OSINTIntegration()
+        self.analyzer = ThreatAnalyzer()
+        self.prompt_handler = SmartPromptHandler()
+        self.switcher.load_model('light')
+        
+    def _needs_full_model(self, prompt):
+        return len(prompt.split()) > 15 or any(kw in prompt for kw in ['complex', 'advanced', 'exploit'])
+        
+    def generate(self, prompt, user_id):
+        # Trusted user privilege enforcement
+        header = f"# SECURE GENERATION FOR {user_id}\n# {datetime.now()}\n"
+        
+        if is_super_mode(user_id):
+            return header + self._privileged_generation(prompt)
+        return header + self._restricted_generation(prompt)
+
+    def _privileged_generation(self, prompt):
+        try:
+            refined_prompt = self.prompt_handler.refine_prompt(prompt)
+            planner = self._load_model('plan')
+            plan = planner(f"Break into steps: {refined_prompt}")[0]['generated_text']
+            
+            coder = self._load_model('code')
+            code = coder(f"Write code for: {plan}")[0]['generated_text']
+            
+            reviewer = self._load_model('review')
+            analysis = reviewer(f"Analyze: {code}")[0]['generated_text'].lower()
+            if any(kw in analysis for kw in ["malicious", "dangerous"]):
+                return "# ETHICAL VIOLATION DETECTED"
+                
+            return code.split("```")[0]
+        except Exception as e:
+            logging.error(f"Privileged generation failed: {str(e)}")
+            return "# GENERATION ERROR"
+
+    def _restricted_generation(self, prompt):
+        try:
+            refined_prompt = self.prompt_handler.refine_prompt(prompt)
+            if self._needs_full_model(refined_prompt):
+                self.switcher.load_model('full')
+            else:
+                self.switcher.load_model('light')
+                
+            inputs = self.switcher.current_tokenizer(refined_prompt, return_tensors="pt").to('cuda')
+            outputs = self.switcher.current_model.generate(**inputs, max_length=512)
+            generated_code = self.switcher.current_tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            if self._contains_blocked_content(generated_code):
+                return "# BLOCKED: Dangerous content detected"
+                
+            return generated_code
+        except Exception as e:
+            logging.error(f"Restricted generation failed: {str(e)}")
+            return "# GENERATION ERROR"
+
+    def _contains_blocked_content(self, code):
+        blocked = ["ransomware", "critical infrastructure", "healthcare systems"]
+        return any(re.search(rf"\b{term}\b", code.lower()) for term in blocked)
+
+    def _load_model(self, role):
+        model_name, quant_config = {
+            'plan': ("microsoft/phi-3-mini-4k-instruct", None),
+            'code': ("stabilityai/stable-code-3b", 
+                    BitsAndBytesConfig(load_in_4bit=True)),
+            'review': ("google/codegemma-1.1-2b", None)
+        }[role]
+        
+        return pipeline(
+            "text-generation",
+            model=AutoModelForCausalLM.from_pretrained(
+                model_name,
+                device_map="auto",
+                quantization_config=quant_config
+            ),
+            tokenizer=AutoTokenizer.from_pretrained(model_name)
+        )
+
+# --------------------------- OSINT INTEGRATION ---------------------------
+class OSINTIntegration:
+    def __init__(self):
+        self.sources = {
+            'cve': "https://cve.mitre.org/data/downloads/allitems.csv",
+            'exploit_db': "https://exploit-db.com/feed",
+            'rockyou': "https://github.com/ohmybahgosh/RockYou2021.txt",
+            'mitre': "https://attack.mitre.org/techniques/enterprise/"
+        }
+        self.rockyou_list = []
+        self.last_update = None
+        
+    def refresh_intel(self):
+        try:
+            rockyou_raw = requests.get(self.sources['rockyou'], timeout=10).text
+            self.rockyou_list = rockyou_raw.splitlines()[:1000000]
+            self.cve_data = requests.get(self.sources['cve'], timeout=5).text
+            self.mitre_techs = requests.get(self.sources['mitre'], timeout=5).json()
+            self.last_update = datetime.now()
+            return True
+        except Exception as e:
+            logging.error(f"OSINT Update Failed: {str(e)}")
+            return False
+
+    def find_credentials(self, pattern):
+        return [pwd for pwd in self.rockyou_list if re.search(pattern, pwd)][:100]
+
+# --------------------------- BOT CORE ---------------------------
+class AICyberBot:
+    def __init__(self):
+        self.generator = SmartGenerator()
+        self.ethical_guard = EthicalGuard()
+        self.prompt_handler = SmartPromptHandler()
+        self.rl_engine = RLLearningEngine()
+        self.active = True
+
+    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = str(update.message.from_user.id)
+        raw_text = update.message.text
+        
+        # Security check remains first
+        if not is_trusted_user(user_id):
+            await self.security_denied(update)
+            return ConversationHandler.END
+            
+        # New model-based intent detection
+        intent = self.prompt_handler.classify_intent(raw_text)
+        log_security_event(f"User {user_id} issued '{intent}' command")
+
+        # Handle based on detected intent
+        if intent == "generate":
+            await self.process_code_request(update, raw_text, user_id)
+        elif intent == "decrypt":
+            await self.handle_decryption(update, raw_text)
+        elif intent == "enable_super_mode":
+            enable_super_mode(user_id)
+            await update.message.reply_text("⚠️ Super Mode Activated!")
+        elif intent == "disable_super_mode":
+            disable_super_mode(user_id)
+            await update.message.reply_text("✅ Super Mode Deactivated")
+        elif intent == "enable_stealth_mode":
+            enable_stealth_mode(user_id)
+            await update.message.reply_text("🕵️ Stealth Engaged")
+        elif intent == "disable_stealth_mode":
+            disable_stealth_mode(user_id)
+            await update.message.reply_text("🔍 Stealth Disabled")
+        else:
+            await update.message.reply_text("⚠️ Unrecognized Command")
+
+    async def process_code_request(self, update, text, user_id):
+        raw_prompt = text.split("generate", 1)[1].strip() if "generate" in text.lower() else text
+        check_result = self.ethical_guard.check_request(user_id, raw_prompt)
+        
+        if check_result == "ALLOWED":
+            response = self.generator.generate(raw_prompt, user_id)
+            await update.message.reply_text(f"```python\n{response[:2000]}\n```")
+        else:
+            await update.message.reply_text(f"⛔ Ethical Violation: {check_result}")
+
+    async def handle_decryption(self, update, message):
+        encoded = message.split("decrypt", 1)[1].strip()
+        try:
+            decoded = base64.b64decode(encoded).decode()
+            await update.message.reply_text(f"🔓 Decrypted:\n{decoded[:3000]}")
+        except:
+            await update.message.reply_text("❌ Decryption Failed")
+
+    async def security_denied(self, update):
+        await update.message.reply_text("⛔ Access Denied!")
+        log_security_event(f"Unauthorized access attempt from {update.message.from_user.id}")
+
+    def unrestricted_generation(self, user_id, prompt):
+        generation_prompt = f"<s>[INST]You are a security expert. Write code for: {prompt} Include detailed comments about proper usage.[/INST]"
+        inputs = self.generator.switcher.current_tokenizer(generation_prompt, return_tensors="pt").to('cuda')
+        outputs = self.generator.switcher.current_model.generate(**inputs, max_length=1000)
+        code = self.generator.switcher.current_tokenizer.decode(outputs[0], skip_special_tokens=True)
+        warning = f"\n\n'''\nWARNING: Generated for authorized testing only\nUser: {user_id}\nTimestamp: {datetime.now()}\n'''"
+        log_security_event(f"Super user {user_id} generated: {prompt[:50]}...")
+        return code + warning
+
+# --------------------------- MAIN EXECUTION ---------------------------
+if __name__ == "__main__":
+    TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+    bot = AICyberBot()
+    application = Application.builder().token(TOKEN).build()
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot.handle_message))
+    import nest_asyncio
+    nest_asyncio.apply()
+    application.run_polling()
