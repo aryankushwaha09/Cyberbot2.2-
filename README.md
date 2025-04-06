@@ -127,7 +127,7 @@ Prompt Handler (Fix + Extract + Classify) │ ▼ ┌─────────
 
 ### Install:
 ```bash
-git clone https://github.com/aryankushwaha/CyberBot-2.3.git
+git clone https://github.com/aryankushwaha09/CyberBot-2.3.git
 cd CyberBot-2.3
 pip install -r requirements.txt
 
