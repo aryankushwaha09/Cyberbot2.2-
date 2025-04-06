@@ -214,3 +214,13 @@ Email: aryankushwaha7991@gmail.com
 
 > “CyberBot 2.3 isn’t a tool—it’s a frontier in ethical offensive AI research.”
 
+
+note:CyberBot2.2 version code is provided in filename(python)
+     due to security purposes Red Team code 2.3 version code is removed from 2.2 version.
+
+                       
+ note: if you find any issues with it pls contact DeepSeek-V3 lab and openai lab all benchmarks 
+         and report are provided by them. 
+
+
+   thankyou 
