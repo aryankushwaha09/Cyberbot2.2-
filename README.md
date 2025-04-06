@@ -1,5 +1,5 @@
 # CYBERBOT 2.2 - Advanced AI Red Team + Security Bot  
-**Version:** 2.2.0 (Super + Stealth Mode) | **Creator:** [Your Name]  
+**Version:** 2.2.0 (Super + Stealth Mode) | **Creator:** [Aryan Kushwaha]  
 **License:** Research-Only | Dual Mode (Secure & Maxed Out)  
 **Status:** Actively Maintained | Latest Benchmark: April 5, 2025  
 
@@ -14,7 +14,7 @@
 
 - **Super Mode**: Secure execution, ethical constraint filters, OSINT integration  
 - **Stealth Mode**: Bypasses standard filters for low-noise/targeted attack simulations  
-- **Max Mode (Trusted Only)**: Full red-team generation, unrestricted AI output  
+- **Max Mode (Trusted Only)**: Full red-team generation, unrestricted AI output (launchingsoon) 
 - **AI Cyber Engine**: Uses hybrid open-source models with auto-switching/unloading  
 - **Prompt Handler**: Built-in Flan-T5/DeepSeek encoder for typo-proof intent detection  
 - **Memory Optimization**: Loads models dynamically, unloads to conserve system resources  
@@ -78,7 +78,7 @@ All models dynamically load/unload as per task complexity, with online/offline s
 ## Installation (Recommended: Colab, Replit, or VM)
 
 ```bash
-git clone https://github.com/yourusername/cyberbot2.2
+git clone https://github.com/aryankushwaha09/cyberbot2.2
 cd cyberbot2.2
 pip install -r requirements.txt
 python cyberbot_main.py --mode super
