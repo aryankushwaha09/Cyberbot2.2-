@@ -197,18 +197,22 @@ How to Contribute:
 12. License
 
 This project is licensed under a Restricted Research License.
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
 
 CyberBot 2.3 © Aryan Kushwaha 2025
 
 Redistribution, commercial use, or real-world offensive deployment is strictly prohibited.  
 Use permitted only for ethical research, education, or simulations in isolated environments.
+any misleading behavior caused by this bot is the person who is using it.
 
 
----
-
-13. Contact
-
-Email: aryankushwaha7991@gmail.com
+contact:
+ aryankushwaha7991@gmail.com@gmail.com
 
 
 
@@ -219,8 +223,9 @@ note:CyberBot2.2 version code is provided in filename(python)
      due to security purposes Red Team code 2.3 version code is removed from 2.2 version.
 
                        
- note: if you find any issues with it pls contact DeepSeek-V3 lab and openai lab all benchmarks 
+ note: if you find any issues with it pls contact DeepSeek-V3 lab and openai lab all              hypothetical benchmarks(assuming by the behavior and output of the bot) 
          and report are provided by them. 
 
 
    thankyou 
+
