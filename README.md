@@ -2,7 +2,9 @@
 
 **Lead Developer:** Aryan Kushwaha  
 **Version:** 2.3 – Red Team Maxed Out  
-**License:** Research & Educational Use Only  
+**License:**                     GNU GENERAL PUBLIC LICENSE
+                                   Version 3, 29 June 2007
+                                Research & Educational Use Only  
 **Release Date:** April 2025
 
 ---
