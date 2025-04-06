@@ -208,26 +208,9 @@ Use permitted only for ethical research, education, or simulations in isolated e
 
 13. Contact
 
-Email: aryanxushwaha@pm.me
-
-Telegram Bot: @Geniuscoderbot
-
-LinkedIn: linkedin.com/in/aryan-cyberai (optional)
-
-GitHub: github.com/aryankushwaha
+Email: aryankushwaha7991@gmail.com
 
 
-
----
 
 > “CyberBot 2.3 isn’t a tool—it’s a frontier in ethical offensive AI research.”
-
-
-
-Let me know if you'd like:
-- A `.md` file version ready to upload.
-- Shields.io badges (language, license, stars).
-- A dark-themed CyberBot logo for GitHub preview.
-
-Want to add a **demo GIF** or **project diagram** next?
 
