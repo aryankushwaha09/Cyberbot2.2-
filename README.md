@@ -137,14 +137,14 @@ python cyberbot.py --mode secure
 
 Run Red Team Mode (Super User):
 
-python cyberbot.py --mode redteam --trusted. ###
+python cyberbot.py --mode redteam --trusted. 
 
 
 ---
 
 
 
-10. Usage Guide
+###10. Usage Guide
 
 Telegram Bot Deployment:
 
@@ -172,7 +172,7 @@ Red team payloads only run in isolated trusted sessions
 
 ---
 
-11. Contribution & Collaboration
+###11. Contribution & Collaboration
 
 Want to build Red Team modules, AI fusion logic, or simulation engines? Feel free to fork or raise a PR. Trusted contributors may gain access to experimental HALO-style unsafe AI logic.
 
@@ -198,7 +198,7 @@ How to Contribute:
 
 ---
 
-12. License
+###12. License
 
 This project is licensed under a Restricted Research License.
                     GNU GENERAL PUBLIC LICENSE
