@@ -137,10 +137,12 @@ python cyberbot.py --mode secure
 
 Run Red Team Mode (Super User):
 
-python cyberbot.py --mode redteam --trusted
+python cyberbot.py --mode redteam --trusted. ###
 
 
 ---
+
+
 
 10. Usage Guide
 
