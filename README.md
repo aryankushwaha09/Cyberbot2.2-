@@ -180,9 +180,23 @@ How to Contribute:
 > Research partnerships are welcome for closed-testing next-gen modules like HALO-NeuroAI and AI Swarm RedOps.
 
 
+### Install:
+```bash
+git clone https://github.com/aryankushwaha09/CyberBot-2.3.git
+cd CyberBot-2.3
+pip install -r requirements.txt
+
+Run Secure Mode:
+
+python cyberbot.py --mode secure
+
+Run Red Team Mode (Super User):
+
+python cyberbot.py --mode redteam --trusted. 
 
 
----
+
+---###
 
 ###12. License
 
