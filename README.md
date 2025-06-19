@@ -203,7 +203,7 @@ any misleading behavior caused by this bot is the person who is using it.
 
 
 contact:
- aryankushwaha7991@gmail.com@gmail.com
+ aryankushwaha7991@gmail.com
 
 
 
